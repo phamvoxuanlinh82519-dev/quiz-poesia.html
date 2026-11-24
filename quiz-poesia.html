@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Poesía</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f3ee;color:#222;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+h1{font-size:1.3rem;margin:0;color:#7a2e2e}
+.stats{font-size:.9rem;color:#555}
+.stats b.ok{color:#1b7f3b}.stats b.ko{color:#b3261e}
+.bar{height:8px;background:#ddd5c8;border-radius:6px;overflow:hidden;margin-bottom:16px}
+.bar>div{height:100%;width:0;background:#7a2e2e;transition:width .3s}
+.card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.tag{display:inline-block;font-size:.75rem;background:#f1e3b8;color:#6b5200;padding:2px 8px;border-radius:10px;margin-bottom:8px}
+.qnum{font-size:.85rem;color:#888;margin-bottom:4px}
+.q{font-size:1.1rem;font-weight:600;margin-bottom:12px;white-space:pre-line}
+.quote{font-style:italic;border-left:4px solid #c9a96a;background:#faf6ee;padding:8px 12px;margin:0 0 12px;white-space:pre-line}
+.opt{display:block;width:100%;text-align:left;padding:11px 12px;margin:8px 0;border:2px solid #ddd5c8;background:#fff;border-radius:10px;font-size:1rem;cursor:pointer;font-family:inherit}
+.opt:hover:not(:disabled){border-color:#7a2e2e}
+.opt:disabled{cursor:default}
+.opt.right{border-color:#1b7f3b;background:#e6f5ea}
+.opt.wrong{border-color:#b3261e;background:#fdeceb}
+.exp{display:none;margin-top:12px;padding:12px;border-radius:10px;background:#eef3fb;font-size:.95rem}
+.exp.show{display:block}
+.exp .verdict{font-weight:700;margin-bottom:4px}
+.exp .src{font-style:italic;color:#444;margin-top:6px}
+button.btn{margin-top:14px;padding:10px 18px;border:0;border-radius:10px;background:#7a2e2e;color:#fff;font-size:1rem;cursor:pointer;font-family:inherit}
+button.btn.alt{background:#555}
+button.btn:disabled{opacity:.4;cursor:default}
+.result{text-align:center}
+.big{font-size:2.4rem;font-weight:800;color:#7a2e2e}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>Tema: Poesía</h1>
+<div class="stats">Đúng <b class="ok" id="sOk">0</b> · Sai <b class="ko" id="sKo">0</b> · <span id="sPos">0/0</span></div>
+</header>
+<div class="bar"><div id="prog"></div></div>
+<div class="card" id="quiz">
+<div id="tag"></div>
+<div class="qnum" id="qnum"></div>
+<div class="q" id="q"></div>
+<div id="quoteBox"></div>
+<div id="opts"></div>
+<div class="exp" id="exp"></div>
+<button class="btn" id="next" disabled>Câu tiếp theo →</button>
+</div>
+<div class="card result hidden" id="result">
+<div class="big" id="score"></div>
+<p id="msg"></p>
+<div class="actions">
+<button class="btn" id="retry">Làm lại câu sai</button>
+<button class="btn alt" id="restart">Làm lại toàn bộ</button>
+</div>
+</div>
+</div>
+<script>
+var SUP="[Bổ sung chuẩn chương trình]";
+var Q=[
+{q:"¿De qué término latino proviene la palabra «poesía»?",o:["poēsis","poema","carmen","versus"],a:0,e:"Theo tài liệu của cô, «poesía» đến từ tiếng Latin poēsis, vốn bắt nguồn từ một khái niệm Hy Lạp.",s:"Poesía (proviene del término latino poēsis…)"},
+{q:"El étimo griego ποίησις significa originalmente:",o:["canción y música","acción, creación, fabricación","rima y ritmo","lamento y tristeza"],a:1,e:"Gốc Hy Lạp ποίησις nghĩa là hành động, sự sáng tạo, chế tác (từ ποιέω = hacer, crear). Mẹo: poesía = «crear».",s:"'acción, creación; adopción; fabricación; composición…'"},
+{q:"Según el material, la poesía es la manifestación de la belleza o del sentimiento estético a través de:",o:["la imagen exclusivamente","la palabra, en verso o en prosa","el verso con rima obligatoria","la música y el baile"],a:1,e:"Định nghĩa của cô: biểu hiện vẻ đẹp / cảm xúc thẩm mỹ bằng LỜI (la palabra), có thể là văn vần HOẶC văn xuôi. Bẫy: đừng chọn «chỉ văn vần có vần».",s:"…a través de la palabra, ya sea en verso o en prosa."},
+{q:"La narración escrita más antigua de la que se conservan registros es:",o:["La Ilíada","El Cantar de Mio Cid","El Poema de Gilgamesh","La Odisea"],a:2,e:"Poema de Gilgamesh là bản tự sự viết cổ nhất còn được lưu giữ.",s:"…es el Poema de Gilgamesh, un texto de origen sumerio…"},
+{q:"El Poema de Gilgamesh es de origen:",o:["egipcio","griego","sumerio","latino"],a:2,e:"Nguồn gốc Sumerio (Sumeria). Nhớ: Gilgamesh – Sumerio.",s:"…un texto de origen sumerio…"},
+{q:"El Poema de Gilgamesh fue escrito sobre:",o:["papiro","pergamino","tablillas de arcilla","piedra"],a:2,e:"Được khắc trên tablillas de arcilla (bảng đất sét), không phải giấy cói hay da thuộc.",s:"…escrito sobre tablillas de arcilla."},
+{q:"La versión más completa conservada del Poema de Gilgamesh consta de:",o:["siete tablillas","diez tablillas","doce tablillas","veinte tablillas"],a:2,e:"Bản đầy đủ nhất gồm 12 tablillas (doce).",s:"…consta de doce tablillas."},
+{q:"¿Quién es el amigo del rey Gilgamesh en el poema?",o:["Khumbaba","Enkidu","Aquiles","Ulises"],a:1,e:"Bạn của Gilgamesh là Enkidu. Khumbaba là con người khổng lồ (gigante) mà họ chiến đấu – bẫy dễ nhầm.",s:"…el rey Gilgamesh y su amigo Enkidu…"},
+{q:"¿Quién es Khumbaba en el Poema de Gilgamesh?",o:["El gigante contra el que luchan","El amigo del rey","Un dios sumerio del cielo","El escriba del texto"],a:0,e:"Khumbaba là gã khổng lồ (gigante) mà Gilgamesh và Enkidu chiến đấu.",s:"…sus peleas contra el gigante Khumbaba, el descenso a los infiernos…"},
+{q:"Entre los temas del Poema de Gilgamesh NO aparece, según el material:",o:["el descenso a los infiernos","la relación entre dioses, semidioses y mortales","las peleas contra el gigante Khumbaba","la conquista de América"],a:3,e:"Nội dung gồm: đánh nhau với Khumbaba, xuống địa ngục, quan hệ thần – bán thần – người phàm. «Conquista de América» hoàn toàn không liên quan.",s:"…la relación entre dioses, semidioses y seres mortales."},
+{q:"La actitud lírica es:",o:["la forma en que el hablante lírico expresa sus emociones","la persona que provoca el sentimiento","el sentimiento expresado en el poema","el número de versos del poema"],a:0,e:"Actitud lírica = CÁCH hablante lírico bày tỏ cảm xúc. Phân biệt: hablante (ai nói), objeto (cái gì gợi cảm xúc), motivo (cảm xúc).",s:"La actitud lírica es la forma en la que el hablante lírico expresa sus emociones."},
+{q:"¿Cuántos tipos de actitud lírica se clasifican en el material?",o:["Dos","Tres","Cuatro","Cinco"],a:1,e:"Có 3 loại: enunciativa, apostrófica (apelativa), carmínica (de la canción).",s:"Se clasifican en 3 tipos."},
+{q:"¿Cuál de estas NO es una actitud lírica según el material?",o:["Actitud enunciativa","Actitud apostrófica o apelativa","Actitud carmínica o de la canción","Actitud descriptiva"],a:3,e:"«Descriptiva» không có trong danh sách của cô. Ba loại đúng: enunciativa – apostrófica/apelativa – carmínica.",s:"Enunciativa, apostrófica o apelativa, carmínica o de la canción."},
+{q:"En la actitud enunciativa, el hablante expresa el contenido del poema a través de:",o:["un diálogo con un interlocutor ideal","símbolos de su mundo interior","un tono narrativo, lleno de emocionalidad","una exclamación al lector"],a:2,e:"Enunciativa = giọng KỂ (tono narrativo) nhưng đầy cảm xúc. Mẹo: enunciar = «nói/kể ra».",s:"…a través de un tono narrativo, lleno de emocionalidad."},
+{q:"En la actitud apostrófica o apelativa, el hablante expresa el contenido:",o:["en forma de diálogo con un interlocutor ideal","mediante un tono narrativo","con símbolos de difícil comprensión","sin interlocutor alguno"],a:0,e:"Apostrófica/apelativa = đối thoại, kêu gọi một người nghe lý tưởng (interlocutor ideal). Mẹo: apelar = «gọi, hướng tới ai».",s:"…en forma de diálogo con un interlocutor ideal."},
+{q:"La actitud carmínica o de la canción es la más lírica porque el poeta:",o:["narra hechos objetivos","habla con un interlocutor ideal","expresa su mundo interior a través de símbolos","describe paisajes con detalle"],a:2,e:"Carmínica = thể hiện thế giới nội tâm bằng biểu tượng (símbolos) nên khó hiểu nhất. Mẹo: carmen = «canción».",s:"…expresa su personal mundo interior a través de símbolos que hacen difícil la comprensión del poema."},
+{q:"«El río Guadalquivir / va entre naranjos y olivos / Los dos ríos de Granada / bajan de la nieve al trigo». ¿Qué actitud lírica presenta?",o:["Enunciativa","Apostrófica","Carmínica","Ninguna de las anteriores"],a:0,e:"Đoạn thơ KỂ/miêu tả dòng sông đi qua cam, ô-liu → giọng tự sự (tono narrativo) = enunciativa.",s:"Ej. actitud enunciativa: Baladilla de los tres ríos."},
+{q:"¿De quién es «Baladilla de los tres ríos»?",o:["Antonio Machado","Juan Ramón Jiménez","Federico García Lorca","Gustavo Adolfo Bécquer"],a:2,e:"Baladilla de los tres ríos là của F. García Lorca (ví dụ cho actitud enunciativa). Nhớ: Granada, Guadalquivir → Lorca.",s:"(Baladilla de los tres ríos, F. García Lorca)"},
+{q:"«Caminante, son tus huellas / El camino y nada más. / Caminante, no hay camino / Se hace camino al andar». ¿Qué actitud lírica presenta?",o:["Enunciativa","Apostrófica o apelativa","Carmínica","Narrativa"],a:1,e:"Hablante gọi thẳng «Caminante» và nói với người đó → đối thoại với interlocutor ideal = apostrófica/apelativa.",s:"Ej. actitud apostrófica: Proverbios y cantares (XXIX) – Antonio Machado."},
+{q:"¿Qué elemento del fragmento de Machado delata la actitud apostrófica?",o:["El vocativo «Caminante» dirigido a un interlocutor","La descripción de un paisaje","La narración de una batalla","El uso de símbolos herméticos"],a:0,e:"Dấu hiệu nhận diện: hô ngữ (vocativo) «Caminante» – nói trực tiếp với một người nghe. Đây là suy luận từ ví dụ của cô để nhận diện nhanh.",s:"«Caminante, no hay camino / Se hace camino al andar»"},
+{q:"«Proverbios y cantares (XXIX)» es una obra de:",o:["Federico García Lorca","Juan Ramón Jiménez","Antonio Machado","Rosalía de Castro"],a:2,e:"Proverbios y cantares (XXIX) là của Antonio Machado (cũng nằm trong Campos de Castilla).",s:"(Extracto de Proverbios y cantares (XXIX) – Antonio Machado)"},
+{q:"«Yo no soy yo. / Soy este / Que va a mi lado sin verlo; / Que, a veces, voy a ver, / Y que, a veces, olvido». ¿Qué actitud lírica presenta?",o:["Enunciativa","Apostrófica","Carmínica o de la canción","Ninguna"],a:2,e:"Nội tâm, biểu tượng, phân thân («yo no soy yo… soy este») khó hiểu → carmínica.",s:"Ej. actitud carmínica: Yo no soy yo, Juan Ramón Jiménez."},
+{q:"¿Quién es el autor del poema «Yo no soy yo»?",o:["Juan Ramón Jiménez","Antonio Machado","Federico García Lorca","Miguel Hernández"],a:0,e:"Yo no soy yo → Juan Ramón Jiménez (ví dụ actitud carmínica).",s:"(Yo no soy yo, Juan Ramón Jiménez)"},
+{q:"Cuando nos preguntamos «quién se expresa» en el poema, nos referimos al:",o:["hablante lírico","objeto lírico","motivo lírico","actitud lírica"],a:0,e:"Quién se expresa = HABLANTE LÍRICO (người nói trong thơ, khác với tác giả ngoài đời).",s:"Cuando nos preguntamos quién se expresa, nos referimos al HABLANTE LÍRICO."},
+{q:"La persona u objeto que provoca los sentimientos en el hablante lírico se llama:",o:["hablante lírico","objeto lírico","motivo lírico","actitud lírica"],a:1,e:"OBJETO LÍRICO = đối tượng gợi cảm xúc (người yêu, thiên nhiên, quê hương…).",s:"…identificamos la persona u objeto que provoca esos sentimientos… OBJETO LÍRICO."},
+{q:"El sentimiento expresado en el poema (amor, nostalgia, tristeza…) se denomina:",o:["hablante lírico","objeto lírico","motivo lírico","actitud lírica"],a:2,e:"MOTIVO LÍRICO = chính cảm xúc được bày tỏ. Mẹo: Hablante = QUIÉN, Objeto = QUÉ/QUIÉN lo provoca, Motivo = QUÉ SIENTE.",s:"Y el sentimiento expresado se denomina MOTIVO LÍRICO."},
+{q:"En un poema de amor a una mujer, el amor es el ___ y la mujer es el ___.",o:["motivo lírico / objeto lírico","objeto lírico / motivo lírico","hablante lírico / motivo lírico","actitud lírica / hablante lírico"],a:0,e:"Cảm xúc (amor) = motivo lírico; người gây ra cảm xúc (la mujer) = objeto lírico. Ví dụ tự đặt để áp dụng khái niệm trong «Resumiendo».",s:"Resumiendo: hablante / objeto / motivo lírico."},
+{tag:SUP,q:"La rima consonante se produce cuando coinciden:",o:["solo las vocales a partir de la última vocal acentuada","todos los sonidos (vocales y consonantes) a partir de la última vocal acentuada","solo las consonantes finales","las sílabas iniciales de dos versos"],a:1,e:"Rima consonante: trùng TẤT CẢ âm (nguyên âm + phụ âm) từ nguyên âm có trọng âm cuối cùng. Chỉ trùng nguyên âm = rima asonante. Nội dung bổ sung ngoài tài liệu của cô.",s:"Ej.: «amor» / «dolor»."},
+{tag:SUP,q:"Un conjunto de versos agrupados por rima y medida forma una:",o:["estrofa","prosa","actitud","sílaba"],a:0,e:"Nhóm các câu thơ (versos) theo vần và số âm tiết = estrofa (khổ thơ). Nội dung bổ sung ngoài tài liệu của cô.",s:"Verso → estrofa → poema."}
+];
+var order,pos,answers,cur,locked;
+function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function $(i){return document.getElementById(i)}
+function stats(){var ok=0,ko=0;for(var k in answers){answers[k]?ok++:ko++}$("sOk").textContent=ok;$("sKo").textContent=ko;$("sPos").textContent=Math.min(pos+1,order.length)+"/"+order.length;$("prog").style.width=(Object.keys(answers).length/order.length*100)+"%"}
+function start(list){order=list;pos=0;answers={};$("quiz").classList.remove("hidden");$("result").classList.add("hidden");show()}
+function show(){
+locked=false;var qi=order[pos],d=Q[qi];
+var opts=shuf(d.o.map(function(t,i){return{t:t,c:i===d.a}}));
+cur={qi:qi,opts:opts};
+$("tag").innerHTML=d.tag?'<span class="tag">'+d.tag+'</span>':"";
+$("qnum").textContent="Câu "+(pos+1)+" / "+order.length;
+var m=d.q.match(/^(.*?)(«[\s\S]*»)(.*)$/);
+if(m&&d.q.indexOf("/")>-1&&m[2].length>40){$("quoteBox").innerHTML='<div class="quote"></div>';$("quoteBox").firstChild.textContent=m[2];$("q").textContent=(m[1]+m[3]).replace(/^[\s.]+/,"").trim()}
+else{$("q").textContent=d.q;$("quoteBox").innerHTML=""}
+var box=$("opts");box.innerHTML="";
+opts.forEach(function(o,i){var b=document.createElement("button");b.className="opt";b.textContent="ABCD"[i]+". "+o.t;b.onclick=function(){pick(i)};box.appendChild(b)});
+$("exp").className="exp";$("exp").innerHTML="";
+$("next").disabled=true;$("next").textContent=pos===order.length-1?"Xem kết quả":"Câu tiếp theo →";
+stats();
+}
+function pick(i){
+if(locked)return;locked=true;var d=Q[cur.qi],ok=cur.opts[i].c;
+answers[cur.qi]=ok;
+var bs=$("opts").children;
+for(var k=0;k<bs.length;k++){bs[k].disabled=true;if(cur.opts[k].c)bs[k].classList.add("right")}
+if(!ok)bs[i].classList.add("wrong");
+var e=$("exp");e.className="exp show";e.innerHTML="";
+var v=document.createElement("div");v.className="verdict";v.textContent=ok?"✅ ¡Correcto! Đúng rồi":"❌ Incorrecto. Sai rồi";
+var t=document.createElement("div");t.textContent=d.e;
+var s=document.createElement("div");s.className="src";s.textContent="📖 "+d.s;
+e.appendChild(v);e.appendChild(t);e.appendChild(s);
+$("next").disabled=false;stats();
+}
+$("next").onclick=function(){if(pos<order.length-1){pos++;show()}else finish()};
+function wrongList(){return order.filter(function(i){return answers[i]===false})}
+function finish(){
+$("quiz").classList.add("hidden");$("result").classList.remove("hidden");
+var ok=0;order.forEach(function(i){if(answers[i])ok++});
+$("score").textContent=ok+" / "+order.length;
+var w=wrongList();
+$("msg").textContent=w.length?("Bạn sai "+w.length+" câu. Hãy làm lại các câu sai cho thuộc!"):"¡Perfecto! Bạn đúng toàn bộ. Có thể chuyển sang tema tiếp theo.";
+$("retry").style.display=w.length?"":"none";
+$("prog").style.width="100%";
+}
+$("retry").onclick=function(){start(shuf(wrongList()))};
+$("restart").onclick=function(){start(shuf(Q.map(function(_,i){return i})))};
+start(Q.map(function(_,i){return i}));
+</script>
+</body>
+</html>
